@@ -12,13 +12,23 @@ def product_list_view(request):
         data = serializer.ProductSerializer(product, many=True).data
         return Response(data=data)
     elif request.method == 'POST':
-        # print(request.data)
-        # title = request.data.get('title')
-        # description = request.data.get('description')
-        # price = request.data.get('price')
-        # category_id = request.data.get('category_id')
+        serializers = serializer.ProductCreateUpdateSerializer(data=request.data)
+        if not serializers.is_valid():
+            return Response(data={'errors': serializers.errors},
+                            status=status.HTTP_406_NOT_ACCEPTABLE)
+        print(request.data)
+        title = request.data.get('title')
+        description = request.data.get('description')
+        price = request.data.get('price')
+        category_id = request.data.get('category_id')
 
-        product = models.Product.objects.create(**request.data)
+        product = models.Product.objects.create(title=title, description=description, price=price,
+                                                category_id=category_id)
+        for i in request.data.get("reviews", []):
+            models.Review.objects.create(stars=i['stars'], text=i['text'], product=product)
+
+
+        #product = models.Product.objects.create(**request.data)
 
         return Response(data=serializer.ProductSerializer(product).data,
                         status=status.HTTP_201_CREATED)

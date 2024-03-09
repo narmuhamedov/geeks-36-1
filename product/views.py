@@ -1,8 +1,12 @@
+from django.contrib.auth.models import User
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from . import serializer, models
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
 
 
 @api_view(['GET', 'POST'])
@@ -27,8 +31,7 @@ def product_list_view(request):
         for i in request.data.get("reviews", []):
             models.Review.objects.create(stars=i['stars'], text=i['text'], product=product)
 
-
-        #product = models.Product.objects.create(**request.data)
+        # product = models.Product.objects.create(**request.data)
 
         return Response(data=serializer.ProductSerializer(product).data,
                         status=status.HTTP_201_CREATED)
@@ -57,18 +60,49 @@ def product_detail_view(request, id):
         return Response(data=serializer.ProductSerializer(product).data)
 
 
+@api_view(['POST'])
+def authorization(request):
+    if request.method == "POST":
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+        if user:
+            Token.objects.filter(user=user).delete()
+            # try:
+            #     token = Token.objects.get(user=user)
+            #
+            # except Token.DoesNotExist:
+
+            token = Token.objects.create(user=user)
+            return Response(data={'key': token.key},
+                            status=status.HTTP_200_OK)
+
+        return Response(data={'error': "User not Found"},
+                        status=status.HTTP_404_NOT_FOUND)
 
 
 
+@api_view(['POST'])
+def registration(request):
+    if request.method == "POST":
+        username = request.data.get('username')
+        password = request.data.get('password')
+        User.objects.create_user(username=username, password=password)
+        return Response(data={'message': 'User created successfully'},
+                        status=status.HTTP_201_CREATED)
 
 
-
-
-
+@permission_classes([IsAuthenticated])
+@api_view(["GET"])
+def user_reviews(request):
+    reviews = models.Review.objects.filter(author=request.user)
+    serializers = serializer.ReviewSerializer(reviews, many=True)
+    return Response(data=serializers.data)
 
 
 @api_view(['GET'])
 def test(request):
+    print(request.user)
     context = {
         'integer': 100,
         'string': 'hello world',

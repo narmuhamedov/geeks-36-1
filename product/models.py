@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Avg
 
+
 class Category(models.Model):
     name = models.CharField(max_length=100)
 
@@ -32,13 +33,13 @@ class Product(models.Model):
     @property
     def rating(self):
         return Review.objects.filter(product=self).aggregate(Avg('stars'))
-       # sum_ = 0
-        # for i in reviews:
-        #     sum_ += i.stars
-        # try:
-        #     return sum_ / reviews.count()
-        # except:
-        #     return 0
+    # sum_ = 0
+    # for i in reviews:
+    #     sum_ += i.stars
+    # try:
+    #     return sum_ / reviews.count()
+    # except:
+    #     return 0
 
 
 class Review(models.Model):
@@ -50,3 +51,5 @@ class Review(models.Model):
 
     def __str__(self):
         return self.text
+
+
